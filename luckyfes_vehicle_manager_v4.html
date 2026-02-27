@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuckyFes'26 車両管理システム</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;700;900&display=swap');
+
+  :root {
+    --gold: #42AE43;
+    --gold-light: #5EC85F;
+    --bg: #FFFFFF;
+    --bg2: #F5F5F5;
+    --bg3: #EBEBEB;
+    --border: #DDDDDD;
+    --text: #1A1A1A;
+    --text-dim: #666666;
+    --green: #42AE43;
+    --red: #D93025;
+    --blue: #2A7AE2;
+    --salmon: #E05A3A;
+    --yellow: #2E8F2F;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0FFF0 50%, #FFFFFF 100%);
+    border-bottom: 1px solid var(--gold);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(66, 174, 67, 0.12);
+  }
+
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    line-height: 1;
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-divider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    margin: 0 10px;
+  }
+
+  .header-title {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .header-stats {
+    margin-left: auto;
+    display: flex;
+    gap: 24px;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* ===== MAIN LAYOUT ===== */
+  .main {
+    padding: 32px 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* ===== TABS ===== */
+  .tab-btn {
+    background: transparent;
+    border: none;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .tab-btn:hover { color: var(--green); }
+  .tab-btn.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+    font-weight: 700;
+  }
+
+  /* ===== UPLOAD ZONE ===== */
+  .upload-section {
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .upload-zone {
+    border: 1px dashed #BBDDBB;
+    border-radius: 4px;
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg2);
+    position: relative;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: #42AE43;
+    background: #F5FFF5;
+    box-shadow: 0 0 30px rgba(66, 174, 67, 0.10);
+  }
+
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  .upload-title {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .upload-hint {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  #fileInput { display: none; }
+
+  /* ===== PROCESSING LOG ===== */
+  .log-area {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: 16px;
+    font-family: monospace;
+    font-size: 12px;
+    max-height: 160px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .log-line {
+    padding: 2px 0;
+    color: var(--text-dim);
+    display: flex;
+    gap: 8px;
+  }
+
+  .log-line.ok { color: var(--green); }
+  .log-line.warn { color: var(--yellow); }
+  .log-line.err { color: var(--red); }
+
+  .log-time { color: #555; flex-shrink: 0; }
+
+  /* ===== CONTROLS ===== */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .filter-btn {
+    background: var(--bg2);
+    border: none;
+    color: var(--text-dim);
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    border-right: 1px solid var(--border);
+  }
+
+  .filter-btn:last-child { border-right: none; }
+
+  .filter-btn:hover { background: #F0FFF0; color: var(--text); }
+
+  .filter-btn.active {
+    background: #42AE43;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .search-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    outline: none;
+    width: 220px;
+    transition: border-color 0.15s;
+  }
+
+  .search-box:focus { border-color: var(--gold); }
+  .search-box::placeholder { color: #444; }
+
+  .btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    font-weight: 700;
+  }
+
+  .btn-primary {
+    background: #42AE43;
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #5EC85F; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .btn-ghost:hover { border-color: #42AE43; color: #42AE43; }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #FFCCCC;
+    color: #D93025;
+  }
+
+  .btn-danger:hover { background: #FFF5F5; }
+
+  .ml-auto { margin-left: auto; }
+
+  /* ===== TABLE ===== */
+  .table-wrapper {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--bg2);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead {
+    background: #F0FFF0;
+    border-bottom: 1px solid var(--gold);
+  }
+
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    font-weight: 700;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1A1A1A;
+    vertical-align: middle;
+    color: var(--text);
+  }
+
+  tr:hover td { background: #F0FFF0; }
+
+  tr:last-child td { border-bottom: none; }
+
+  /* badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .badge-instrument {
+    background: #FFFDE7;
+    border: 1px solid #42AE43;
+    color: #2E8F2F;
+  }
+
+  .badge-passenger {
+    background: #E8F4FD;
+    border: 1px solid #2A7AE2;
+    color: #1A5CB5;
+  }
+
+  .badge-day1 { color: #C05000; }
+  .badge-day2 { color: #1A6BAA; }
+  .badge-day3 { color: #2E7D32; }
+  .badge-day4 { color: #880E4F; }
+
+  /* vehicle number cells */
+  .vnum {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+
+  .vnum-instrument { color: #2E8F2F; }
+  .vnum-passenger { color: #C05000; }
+  .vnum-empty { color: #BBBBBB; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; }
+
+  /* editable cell */
+  .editable {
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 2px;
+    transition: background 0.15s;
+  }
+
+  .editable:hover { background: #222; }
+
+  /* artist name */
+  .artist-name {
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    padding: 80px 40px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-title { font-size: 16px; margin-bottom: 8px; color: #999; }
+  .empty-sub { font-size: 12px; }
+
+  /* ===== PDF EXPORT MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 2px solid #42AE43;
+    border-radius: 4px;
+    padding: 32px;
+    width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .modal-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .form-row {
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    outline: none;
+  }
+
+  .form-input:focus { border-color: var(--gold); }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: flex-end;
+  }
+
+  /* ===== VEHICLE CERTIFICATE PREVIEW ===== */
+  .cert-preview-area {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--bg3);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .cert-preview-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* ===== CERTIFICATE (for print) ===== */
+  .cert-container {
+    width: 210mm;
+    margin: 0 auto;
+  }
+
+  .cert {
+    width: 210mm;
+    height: 148mm;
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Noto Sans JP', sans-serif;
+    overflow: hidden;
+  }
+
+  .cert-instrument {
+    background: #E8C840;
+  }
+
+  .cert-passenger {
+    background: #F08070;
+  }
+
+  .cert-top {
+    display: flex;
+    height: 58mm;
+  }
+
+  .cert-title-area {
+    flex: 1;
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .cert-title-main {
+    font-size: 38pt;
+    font-weight: 900;
+    color: #000;
+    line-height: 1.1;
+  }
+
+  .cert-title-sub {
+    font-size: 24pt;
+    font-weight: 900;
+    color: #000;
+    margin-top: 2px;
+  }
+
+  .cert-num-area {
+    width: 70mm;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-left: 3px solid #000;
+    padding: 10px;
+    gap: 4px;
+  }
+
+  .cert-num-value {
+    font-size: 52pt;
+    font-weight: 900;
+    color: #CC0000;
+    line-height: 1;
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 2px;
+  }
+
+  .cert-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22pt;
+    font-weight: 900;
+    color: #000;
+    letter-spacing: 1px;
+  }
+
+  .cert-middle {
+    display: flex;
+    height: 42mm;
+    border-top: 3px solid #000;
+  }
+
+  .cert-date-label {
+    width: 30mm;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 6px;
+  }
+
+  .cert-date-label-text {
+    color: #fff;
+    font-size: 18pt;
+    font-weight: 900;
+    writing-mode: horizontal-tb;
+    letter-spacing: 2px;
+  }
+
+  .cert-date-value {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 46pt;
+    font-weight: 900;
+    color: #000;
+    background: rgba(255,255,255,0.5);
+    border-right: 3px solid #000;
+  }
+
+  .cert-name-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 16px;
+    gap: 6px;
+  }
+
+  .cert-name-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .cert-name-label {
+    font-size: 16pt;
+    font-weight: 900;
+    color: #000;
+    white-space: nowrap;
+  }
+
+  .cert-name-value {
+    font-size: 14pt;
+    color: #000;
+    border-bottom: 2px solid #000;
+    flex: 1;
+    padding-bottom: 2px;
+    min-height: 22pt;
+  }
+
+  .cert-bottom {
+    flex: 1;
+    background: rgba(0,0,0,0.1);
+    border-top: 2px solid #000;
+    padding: 8px 16px;
+  }
+
+  .cert-caution-title {
+    font-size: 11pt;
+    font-weight: 900;
+    color: #000;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  .cert-caution-list {
+    font-size: 7pt;
+    color: #000;
+    line-height: 1.6;
+  }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px;
+    border-radius: 4px;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 300;
+    pointer-events: none;
+    max-width: 320px;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.error { border-left-color: var(--red); }
+
+  /* ===== SUMMARY CARDS ===== */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .summary-card-icon {
+    font-size: 24px;
+    opacity: 0.7;
+  }
+
+  .summary-card-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .summary-card-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CCCCCC; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #AAAAAA; }
+
+  @media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; }
+    .cert { break-after: page; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-text">LuckyFes'26</div>
+    <div class="logo-sub">Vehicle Management System</div>
+  </div>
+  <div class="header-divider"></div>
+  <div class="header-title">車両管理システム</div>
+  <div class="header-stats">
+    <div class="stat-item">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">総車両数</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statInstrument">0</div>
+      <div class="stat-label">機材車</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statArtists">0</div>
+      <div class="stat-label">アーティスト数</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statFiles">0</div>
+      <div class="stat-label">読込ファイル数</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- UPLOAD -->
+  <div class="upload-section">
+    <div class="section-label">① データ読み込み</div>
+
+    <!-- タブ切り替え -->
+    <div style="display:flex; gap:0; margin-bottom:16px; border-bottom:2px solid var(--border);">
+      <button class="tab-btn active" id="tabExcel" onclick="switchTab('excel')">📂 Excelファイル</button>
+      <button class="tab-btn" id="tabSheet" onclick="switchTab('sheet')">📊 Googleスプレッドシート</button>
+    </div>
+
+    <!-- Excel タブ -->
+    <div id="panelExcel">
+      <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📂</div>
+        <div class="upload-title">Excelファイルをドロップ、またはクリックして選択</div>
+        <div class="upload-hint">複数ファイル同時対応 ／ .xlsx .xls</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
+      </div>
+    </div>
+
+    <!-- Googleスプレッドシート タブ -->
+    <div id="panelSheet" style="display:none">
+      <div style="background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:24px;">
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:16px; line-height:1.8;">
+          Google Apps Script経由で車両まとめスプレッドシートに接続します。<br>
+          ボタンを押すだけで<strong style="color:var(--green)">常に最新データ</strong>を取得できます。
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div style="font-size:12px; color:#888; flex:1;">
+            📋 接続先：LF'26 車両まとめスプレッドシート
+          </div>
+          <button class="btn btn-primary" onclick="loadFromSheet()">🔄 最新データを読み込む</button>
+        </div>
+        <div id="sheetStatus" style="margin-top:12px; font-size:12px; display:none;"></div>
+      </div>
+    </div>
+
+    <div class="log-area" id="logArea"></div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="summary-row" id="summaryRow" style="display:none">
+    <div class="summary-card">
+      <div class="summary-card-icon">🗓️</div>
+      <div>
+        <div class="summary-card-num" id="cardDay1">0</div>
+        <div class="summary-card-label">8/9（土）</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🗓️</div>
+      <div>
+        <div class="summary-card-num" id="cardDay2">0</div>
+        <div class="summary-card-label">8/10（日）</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🗓️</div>
+      <div>
+        <div class="summary-card-num" id="cardDay3">0</div>
+        <div class="summary-card-label">8/11（月）</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🗓️</div>
+      <div>
+        <div class="summary-card-num" id="cardDay4">0</div>
+        <div class="summary-card-label">8/12（火）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls" id="tableControls" style="display:none">
+    <div class="filter-group">
+      <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+      <button class="filter-btn" onclick="setFilter('8/9', this)">8/9 土</button>
+      <button class="filter-btn" onclick="setFilter('8/10', this)">8/10 日</button>
+      <button class="filter-btn" onclick="setFilter('8/11', this)">8/11 月</button>
+      <button class="filter-btn" onclick="setFilter('8/12', this)">8/12 火</button>
+    </div>
+    <div class="filter-group">
+      <button class="filter-btn active" id="typeAll" onclick="setTypeFilter('all', this)">全種別</button>
+      <button class="filter-btn" id="typeInst" onclick="setTypeFilter('instrument', this)">機材車のみ</button>
+      <button class="filter-btn" id="typePass" onclick="setTypeFilter('passenger', this)">乗用車のみ</button>
+    </div>
+    <input class="search-box" id="searchBox" placeholder="アーティスト名 / ドライバー名で検索..." oninput="renderTable()">
+    <div class="ml-auto" style="display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="autoAssignNumbers()">🔢 車両証番号を自動割当</button>
+      <button class="btn btn-primary" onclick="showExportModal()">📄 車両証PDFを発行</button>
+      <button class="btn btn-danger" onclick="clearAll()">🗑 クリア</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrapper" id="tableWrapper">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🚗</div>
+      <div class="empty-title">データがありません</div>
+      <div class="empty-sub">Excelファイルをアップロードしてください</div>
+    </div>
+    <table id="mainTable" style="display:none">
+      <thead>
+        <tr>
+          <th>出演日</th>
+          <th>アーティスト名</th>
+          <th>No.</th>
+          <th>ドライバー氏名</th>
+          <th>携帯電話番号</th>
+          <th>車種・色</th>
+          <th>ナンバー</th>
+          <th>用途</th>
+          <th>楽器車</th>
+          <th style="color:var(--salmon)">一般車証 No.</th>
+          <th style="color:var(--yellow)">機材車証 No.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <div class="modal-title">車両証 PDF 発行</div>
+    <div class="modal-sub">印刷用の車両証を生成します</div>
+
+    <div class="form-row">
+      <label class="form-label">発行対象</label>
+      <div class="filter-group" style="display:inline-flex">
+        <button class="filter-btn active" id="exportAll" onclick="setExportFilter('all', this)">全車両</button>
+        <button class="filter-btn" id="exportInst" onclick="setExportFilter('instrument', this)">機材車のみ</button>
+        <button class="filter-btn" id="exportPass" onclick="setExportFilter('passenger', this)">一般車のみ</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">対象日</label>
+      <div class="filter-group" style="display:inline-flex">
+        <button class="filter-btn active" id="exportDayAll" onclick="setExportDay('all', this)">全日程</button>
+        <button class="filter-btn" onclick="setExportDay('8/9', this)">8/9</button>
+        <button class="filter-btn" onclick="setExportDay('8/10', this)">8/10</button>
+        <button class="filter-btn" onclick="setExportDay('8/11', this)">8/11</button>
+        <button class="filter-btn" onclick="setExportDay('8/12', this)">8/12</button>
+      </div>
+    </div>
+
+    <div class="cert-preview-area">
+      <div class="cert-preview-label">プレビュー（発行枚数）</div>
+      <div id="exportPreview" style="font-size:13px; color: var(--text-dim)">
+        条件を選択してください
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="generatePDF()">🖨️ 印刷プレビューを開く</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT AREA -->
+<div id="printArea" style="display:none"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== STATE ==========
+let vehicles = []; // [{day, artist, no, driver, tel, type_color, plate, usage, isInstrument, passengerNum, instrumentNum}]
+let currentFilter = 'all';
+let currentTypeFilter = 'all';
+let exportFilter = 'all';
+let exportDay = 'all';
+let fileCount = 0;
+
+// ========== NUMBERING CONFIG ==========
+const DAY_RANGES = {
+  '8/9':  { start: 1,   end: 300 },
+  '8/10': { start: 301, end: 600 },
+  '8/11': { start: 601, end: 900 },
+  '8/12': { start: 901, end: 1200 },
+};
+
+const DAY_LABELS = {
+  '8/9':  '8/9（土）',
+  '8/10': '8/10（日）',
+  '8/11': '8/11（月）',
+  '8/12': '8/12（火）',
+};
+
+// ========== TAB SWITCH ==========
+function switchTab(tab) {
+  document.getElementById('panelExcel').style.display = tab === 'excel' ? 'block' : 'none';
+  document.getElementById('panelSheet').style.display = tab === 'sheet' ? 'block' : 'none';
+  document.getElementById('tabExcel').classList.toggle('active', tab === 'excel');
+  document.getElementById('tabSheet').classList.toggle('active', tab === 'sheet');
+}
+
+// ========== GOOGLE SHEETS LOADER ==========
+function extractSheetId(url) {
+  const m = url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function extractGid(url) {
+  const m = url.match(/[#&?]gid=(\d+)/);
+  return m ? m[1] : '0';
+}
+
+async function loadFromSheet() {
+  const logArea = document.getElementById('logArea');
+  logArea.style.display = 'block';
+
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyGxn4xP_HuOQFkXih8Zu3XHaF96OWwGjCj6GFRZWMpWIPnzGe3uj9eTLzoWYzbhdJFrg/exec';
+
+  showStatus('⏳ スプレッドシートに接続中...', 'loading');
+  addLog('接続中: Google Apps Script経由', '');
+
+  try {
+    const res = await fetch(GAS_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status} - 接続できませんでした`);
+
+    const json = await res.json();
+    if (!Array.isArray(json)) throw new Error('データ形式が正しくありません');
+
+    addLog(`✓ データ取得成功 (${json.length}行)`, 'ok');
+
+    const extracted = extractFromSpreadsheet(json);
+
+    if (extracted.length === 0) {
+      showStatus('⚠️ 車両データが見つかりませんでした', 'warn');
+      addLog('△ 車両データを検出できませんでした', 'warn');
+      return;
+    }
+
+    vehicles.push(...extracted);
+    fileCount++;
+    showStatus(`✅ ${extracted.length}台の車両データを読み込みました`, 'ok');
+    addLog(`✓ スプレッドシートから ${extracted.length}台を抽出完了`, 'ok');
+    updateUI();
+
+  } catch(err) {
+    showStatus(`❌ ${err.message}`, 'err');
+    addLog(`✗ エラー: ${err.message}`, 'err');
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('sheetStatus');
+  el.style.display = 'block';
+  const colors = { ok: '#2E8F2F', warn: '#B07A00', err: '#D93025', loading: '#666' };
+  el.style.color = colors[type] || '#666';
+  el.textContent = msg;
+}
+
+// ========== CSV PARSER ==========
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const cells = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === ',' && !inQ) { cells.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    cells.push(cur.trim());
+    rows.push(cells);
+  }
+  return rows;
+}
+
+// ========== SPREADSHEET EXTRACTOR ==========
+// さっきのスプレッドシート構造に対応:
+// 出演日 | アーティスト | No. | 運転者名 | (空) | 携帯 | 車種 | ナンバー | (空) | 用途 | (空) | 色 | 楽器車 | 備考 | 車両証no | 機材車証no
+function extractFromSpreadsheet(rows) {
+  const results = [];
+
+  // ヘッダー行を探す（「出演日」「アーティスト」「運転者名」が含まれる行）
+  let headerRow = -1;
+  for (let r = 0; r < rows.length; r++) {
+    const line = rows[r].join('');
+    if (line.includes('出演日') && (line.includes('アーティスト') || line.includes('運転者名'))) {
+      headerRow = r;
+      break;
+    }
+  }
+
+  if (headerRow < 0) {
+    // ヘッダーが見つからない場合は構造から直接推定
+    headerRow = 4; // 5行目あたりが多い
+  }
+
+  // カラム位置をヘッダーから特定
+  const hrow = rows[headerRow] || [];
+  let colDay = 0, colArtist = 1, colNo = 2, colDriver = 3, colTel = 5,
+      colType = 6, colPlate = 7, colUsage = 9, colColor = 11, colInst = 12,
+      colPassNum = 14, colInstNum = 15;
+
+  hrow.forEach((h, i) => {
+    const s = h.replace(/\s/g,'');
+    if (s.includes('出演日')) colDay = i;
+    else if (s.includes('アーティスト')) colArtist = i;
+    else if (s === 'No.' || s === 'No') colNo = i;
+    else if (s.includes('運転者名') || s.includes('ドライバー')) colDriver = i;
+    else if (s.includes('携帯')) colTel = i;
+    else if (s.includes('車種')) colType = i;
+    else if (s.includes('ナンバー')) colPlate = i;
+    else if (s.includes('用途')) colUsage = i;
+    else if (s.includes('色')) colColor = i;
+    else if (s.includes('楽器車') || s.includes('楽器')) colInst = i;
+    else if (s.includes('車両証no') || s.includes('車両証No')) colPassNum = i;
+    else if (s.includes('機材車証') || s.includes('機材車no')) colInstNum = i;
+  });
+
+  let currentDay = '';
+  let currentArtist = '';
+
+  for (let r = headerRow + 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.every(c => !c)) continue;
+
+    const get = (col) => (row[col] || '').trim();
+
+    // 日付・アーティスト名は空の場合は前の行から引き継ぐ
+    const day = get(colDay);
+    const artist = get(colArtist);
+
+    if (day && !day.match(/^\d+$/)) currentDay = normalizeDay(day);
+    if (artist && !artist.match(/^\d+$/)) currentArtist = artist;
+
+    const driver = get(colDriver);
+    const tel = get(colTel);
+    const typeStr = get(colType);
+    const plate = get(colPlate);
+    const usage = get(colUsage);
+    const color = get(colColor);
+    const instVal = get(colInst);
+    const passNum = get(colPassNum);
+    const instNum = get(colInstNum);
+
+    // 空行スキップ（ドライバー・ナンバー・車種がすべて空）
+    if (!driver && !plate && !typeStr) continue;
+    // ヘッダー行を誤検出しないようにスキップ
+    if (driver === '運転者名' || driver === 'ドライバー氏名') continue;
+
+    const isInstrument = instVal === '⚫︎' || instVal === '●' || instVal === '〇' || instVal === '○' || instVal.toLowerCase() === 'true';
+    const typeColor = [typeStr, color].filter(Boolean).join(' / ');
+
+    const vehicleNo = results.filter(v => v.artist === currentArtist).length + 1;
+
+    results.push({
+      id: `sheet_${currentArtist}_${vehicleNo}_${r}`,
+      day: currentDay || '未定',
+      artist: currentArtist || '不明',
+      no: vehicleNo,
+      driver: driver || '未定',
+      tel,
+      typeColor: typeColor || '',
+      plate,
+      usage,
+      isInstrument,
+      passengerNum: passNum || '',
+      instrumentNum: instNum || '',
+    });
+  }
+
+  return results;
+}
+
+function normalizeDay(s) {
+  // 「8月9日(土)」→「8/9」などに正規化
+  s = s.replace(/\s/g,'');
+  let m = s.match(/(\d+)[月\/](\d+)/);
+  if (m) return `${m[1]}/${m[2]}`;
+  // 「8/9（土）」→「8/9」
+  m = s.match(/(\d+\/\d+)/);
+  if (m) return m[1];
+  return s;
+}
+
+// ========== DRAG & DROP ==========
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFiles(e.dataTransfer.files);
+});
+document.getElementById('fileInput').addEventListener('change', e => handleFiles(e.target.files));
+
+// ========== FILE HANDLING ==========
+function handleFiles(files) {
+  const logArea = document.getElementById('logArea');
+  logArea.style.display = 'block';
+
+  Array.from(files).forEach(file => {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      addLog(`スキップ: ${file.name}（対応外形式）`, 'warn');
+      return;
+    }
+    addLog(`読込中: ${file.name}`, '');
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const extracted = extractVehicleData(wb, file.name);
+        if (extracted.length > 0) {
+          vehicles.push(...extracted);
+          fileCount++;
+          addLog(`✓ ${file.name} → ${extracted.length}台の車両を抽出`, 'ok');
+          updateUI();
+        } else {
+          addLog(`△ ${file.name} → 車両データが見つかりませんでした`, 'warn');
+        }
+      } catch (err) {
+        addLog(`✗ ${file.name} → 読込エラー: ${err.message}`, 'err');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ========== EXCEL EXTRACTION ==========
+function extractVehicleData(wb, filename) {
+  const results = [];
+  // シート①を探す
+  const sheetName = wb.SheetNames.find(n => n.includes('基本情報') || n.includes('車輌') || n.includes('車両') || n === wb.SheetNames[0]);
+  if (!sheetName) return results;
+
+  const ws = wb.Sheets[sheetName];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+  // アーティスト名
+  let artistName = '';
+  let performDay = '';
+
+  for (let r = 0; r < data.length; r++) {
+    const row = data[r];
+    const rowStr = row.map(c => c == null ? '' : String(c)).join('|');
+
+    // アーティスト名を探す
+    if (rowStr.includes('アーティスト名')) {
+      for (let c = 0; c < row.length; c++) {
+        if (row[c] && String(row[c]).includes('アーティスト名') && row[c+1]) {
+          // skip label cell, find value
+        }
+        if (String(row[c] || '') === 'アーティスト名') {
+          // 次の非空セルを探す
+          for (let cc = c+1; cc < row.length; cc++) {
+            if (row[cc] && String(row[cc]).trim() !== '') {
+              artistName = String(row[cc]).trim();
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // 出演日
+    if (rowStr.includes('ご出演日')) {
+      for (let c = 0; c < row.length; c++) {
+        if (String(row[c] || '').includes('ご出演日')) {
+          for (let cc = c+1; cc < row.length; cc++) {
+            if (row[cc]) {
+              const v = row[cc];
+              if (v instanceof Date) {
+                performDay = `${v.getMonth()+1}/${v.getDate()}`;
+              } else {
+                const s = String(v);
+                const m = s.match(/(\d+)[\/月](\d+)/);
+                if (m) performDay = `${m[1]}/${m[2]}`;
+              }
+              if (performDay) break;
+            }
+          }
+        }
+      }
+    }
+
+    // 駐車証申請リストのヘッダー行を探す
+    if (rowStr.includes('ドライバー氏名') && rowStr.includes('携帯電話番号')) {
+      // 次行から車両データ
+      for (let dr = r+1; dr < Math.min(r+20, data.length); dr++) {
+        const drow = data[dr];
+        if (!drow || drow.every(c => c == null || String(c).trim() === '')) continue;
+
+        const rowText = drow.map(c => c == null ? '' : String(c).trim());
+
+        // 「記入例」行をスキップ
+        if (rowText.join('').includes('記入例') || rowText.join('').includes('タナカ　ユウジ')) continue;
+
+        // 非空データを収集
+        const nonEmpty = rowText.filter(t => t !== '');
+        if (nonEmpty.length < 2) continue;
+
+        // 「ステージ裏」「海浜口」などのラベルが最初に来るパターン
+        let driver = '', tel = '', typeColor = '', plate = '', usage = '', isInstrument = false;
+
+        // ラベル列(col1)、ドライバー(col2)...という構造
+        // col0: 行番号or区分, col1: ドライバー氏名, col3: 電話番号, col5: 車種色, col7: ナンバー, col10: 用途, col11: 楽器車
+
+        // ヘッダー行でカラム位置を特定する
+        const hrow = data[r];
+        let colDriver = -1, colTel = -1, colType = -1, colPlate = -1, colUsage = -1, colInst = -1;
+        for (let c = 0; c < hrow.length; c++) {
+          const h = String(hrow[c] || '');
+          if (h.includes('ドライバー氏名')) colDriver = c;
+          if (h.includes('携帯電話番号')) colTel = c;
+          if (h.includes('車種')) colType = c;
+          if (h.includes('ナンバー')) colPlate = c;
+          if (h.includes('用途')) colUsage = c;
+          if (h.includes('楽器車')) colInst = c;
+        }
+
+        if (colDriver < 0) colDriver = 2;
+        if (colTel < 0) colTel = 4;
+        if (colType < 0) colType = 6;
+        if (colPlate < 0) colPlate = 8;
+        if (colUsage < 0) colUsage = 11;
+        if (colInst < 0) colInst = 12;
+
+        driver = String(drow[colDriver] || '').trim();
+        tel = String(drow[colTel] || '').trim();
+        typeColor = String(drow[colType] || '').trim();
+        plate = String(drow[colPlate] || '').trim();
+        usage = String(drow[colUsage] || '').trim();
+        const instVal = String(drow[colInst] || '').trim();
+        isInstrument = instVal === '●' || instVal.toLowerCase() === 'true' || instVal === '〇' || instVal === '○';
+
+        // 空行スキップ
+        if (!driver && !tel && !typeColor && !plate) continue;
+
+        const vehicleNo = results.filter(v => v.artist === artistName).length + 1;
+
+        results.push({
+          id: `${artistName}_${vehicleNo}_${Date.now()}`,
+          day: performDay || '未定',
+          artist: artistName || filename.replace(/\.[^.]+$/, ''),
+          no: vehicleNo,
+          driver: driver || '未定',
+          tel: tel || '',
+          typeColor: typeColor || '',
+          plate: plate || '',
+          usage: usage || '',
+          isInstrument,
+          passengerNum: '',
+          instrumentNum: '',
+        });
+      }
+      break; // 最初の車両テーブルを処理したら終了
+    }
+  }
+
+  return results;
+}
+
+// ========== AUTO ASSIGN ==========
+function autoAssignNumbers() {
+  // 日ごとに分けてカウンター管理
+  const passengerCounters = {};
+  const instrumentCounters = {};
+
+  Object.keys(DAY_RANGES).forEach(day => {
+    passengerCounters[day] = DAY_RANGES[day].start;
+    instrumentCounters[day] = DAY_RANGES[day].start;
+  });
+
+  // 未割当のもののみ割り当て
+  const sorted = [...vehicles].sort((a, b) => {
+    const dOrder = ['8/9','8/10','8/11','8/12'];
+    return dOrder.indexOf(a.day) - dOrder.indexOf(b.day);
+  });
+
+  sorted.forEach(v => {
+    const day = v.day;
+    if (!DAY_RANGES[day]) return;
+
+    if (v.isInstrument) {
+      if (!v.instrumentNum) {
+        v.instrumentNum = String(instrumentCounters[day]).padStart(3, '0');
+        instrumentCounters[day]++;
+      }
+    } else {
+      if (!v.passengerNum) {
+        v.passengerNum = String(passengerCounters[day]).padStart(3, '0');
+        passengerCounters[day]++;
+      }
+    }
+  });
+
+  // vehiclesを更新
+  sorted.forEach(sv => {
+    const v = vehicles.find(vv => vv.id === sv.id);
+    if (v) {
+      v.passengerNum = sv.passengerNum;
+      v.instrumentNum = sv.instrumentNum;
+    }
+  });
+
+  renderTable();
+  showToast('✓ 車両証番号を自動割当しました');
+}
+
+// ========== RENDER ==========
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const search = document.getElementById('searchBox').value.toLowerCase();
+
+  const filtered = vehicles.filter(v => {
+    if (currentFilter !== 'all' && !v.day.startsWith(currentFilter)) return false;
+    if (currentTypeFilter === 'instrument' && !v.isInstrument) return false;
+    if (currentTypeFilter === 'passenger' && v.isInstrument) return false;
+    if (search && !v.artist.toLowerCase().includes(search) && !v.driver.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    document.getElementById('mainTable').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('emptyState').innerHTML = `
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">該当する車両がありません</div>
+      <div class="empty-sub">条件を変えて検索してください</div>`;
+    return;
+  }
+
+  document.getElementById('mainTable').style.display = 'table';
+  document.getElementById('emptyState').style.display = 'none';
+
+  // group by artist for coloring
+  const artistColors = {};
+  let colorIdx = 0;
+  const colors = ['#F5FFF5','#F5F5FF','#FFF5F5','#F5FFFF','#FFFFF5'];
+
+  const rows = filtered.map(v => {
+    if (!(v.artist in artistColors)) {
+      artistColors[v.artist] = colors[colorIdx % colors.length];
+      colorIdx++;
+    }
+    const bg = artistColors[v.artist];
+
+    const dayClass = { '8/9':'badge-day1','8/10':'badge-day2','8/11':'badge-day3','8/12':'badge-day4' }[v.day] || '';
+    const instBadge = v.isInstrument
+      ? '<span class="badge badge-instrument">機材車</span>'
+      : '<span class="badge badge-passenger">乗用車</span>';
+
+    const passNum = v.isInstrument ? '-' :
+      (v.passengerNum ? `<span class="vnum vnum-passenger">${v.passengerNum}</span>` : '<span class="vnum-empty">未割当</span>');
+    const instNum = !v.isInstrument ? '-' :
+      (v.instrumentNum ? `<span class="vnum vnum-instrument">${v.instrumentNum}</span>` : '<span class="vnum-empty">未割当</span>');
+
+    return `<tr style="background:${bg}20" data-id="${v.id}">
+      <td><span class="${dayClass}" style="font-weight:700">${v.day}</span></td>
+      <td><span class="artist-name">${escHtml(v.artist)}</span></td>
+      <td style="color:var(--text-dim)">${v.no}</td>
+      <td>${escHtml(v.driver)}</td>
+      <td style="font-family:monospace;font-size:11px">${escHtml(v.tel)}</td>
+      <td>${escHtml(v.typeColor)}</td>
+      <td style="font-family:monospace;font-size:11px">${escHtml(v.plate)}</td>
+      <td style="color:var(--text-dim)">${escHtml(v.usage)}</td>
+      <td>${instBadge}</td>
+      <td>${passNum}</td>
+      <td>${instNum}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="deleteVehicle('${v.id}')">削除</button></td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows.join('');
+  updateStats();
+}
+
+function updateUI() {
+  document.getElementById('tableControls').style.display = 'flex';
+  document.getElementById('summaryRow').style.display = 'grid';
+
+  if (vehicles.length === 0) {
+    document.getElementById('mainTable').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('emptyState').innerHTML = `
+      <div class="empty-icon">🚗</div>
+      <div class="empty-title">データがありません</div>
+      <div class="empty-sub">Excelファイルをアップロードしてください</div>`;
+  } else {
+    renderTable();
+  }
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = vehicles.length;
+  document.getElementById('statInstrument').textContent = vehicles.filter(v => v.isInstrument).length;
+  document.getElementById('statArtists').textContent = new Set(vehicles.map(v => v.artist)).size;
+  document.getElementById('statFiles').textContent = fileCount;
+
+  ['8/9','8/10','8/11','8/12'].forEach((d, i) => {
+    const cnt = vehicles.filter(v => v.day === d).length;
+    document.getElementById(`cardDay${i+1}`).textContent = cnt;
+  });
+
+  updateExportPreview();
+}
+
+// ========== FILTERS ==========
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-group:first-child .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function setTypeFilter(val, btn) {
+  currentTypeFilter = val;
+  ['typeAll','typeInst','typePass'].forEach(id => document.getElementById(id).classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+// ========== DELETE ==========
+function deleteVehicle(id) {
+  vehicles = vehicles.filter(v => v.id !== id);
+  updateUI();
+}
+
+function clearAll() {
+  if (!confirm('すべての車両データを削除しますか？')) return;
+  vehicles = [];
+  fileCount = 0;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('logArea').style.display = 'none';
+  document.getElementById('logArea').innerHTML = '';
+  document.getElementById('tableControls').style.display = 'none';
+  document.getElementById('summaryRow').style.display = 'none';
+  document.getElementById('mainTable').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('emptyState').innerHTML = `
+    <div class="empty-icon">🚗</div>
+    <div class="empty-title">データがありません</div>
+    <div class="empty-sub">Excelファイルをアップロードしてください</div>`;
+  updateStats();
+}
+
+// ========== MODAL ==========
+function showExportModal() {
+  document.getElementById('exportModal').classList.add('show');
+  updateExportPreview();
+}
+
+function closeModal() {
+  document.getElementById('exportModal').classList.remove('show');
+}
+
+function setExportFilter(val, btn) {
+  exportFilter = val;
+  ['exportAll','exportInst','exportPass'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  btn.classList.add('active');
+  updateExportPreview();
+}
+
+function setExportDay(val, btn) {
+  exportDay = val;
+  document.querySelectorAll('#exportModal .filter-group:last-of-type .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateExportPreview();
+}
+
+function getExportVehicles() {
+  return vehicles.filter(v => {
+    if (exportDay !== 'all' && !v.day.startsWith(exportDay)) return false;
+    if (exportFilter === 'instrument' && !v.isInstrument) return false;
+    if (exportFilter === 'passenger' && v.isInstrument) return false;
+    return true;
+  });
+}
+
+function updateExportPreview() {
+  const el = document.getElementById('exportPreview');
+  if (!el) return;
+  const evs = getExportVehicles();
+  const inst = evs.filter(v => v.isInstrument);
+  const pass = evs.filter(v => !v.isInstrument);
+  el.innerHTML = `
+    <span style="color:var(--yellow)">機材車証: ${inst.length}枚</span>　
+    <span style="color:var(--salmon)">一般車証: ${pass.length}枚</span>　
+    <span style="color:var(--text)">合計: ${evs.length}枚</span>
+  `;
+}
+
+// ========== PDF GENERATION ==========
+function generatePDF() {
+  const evs = getExportVehicles();
+  if (evs.length === 0) {
+    showToast('対象の車両がありません', true);
+    return;
+  }
+
+  const printArea = document.getElementById('printArea');
+  const certHTML = evs.map(v => buildCert(v)).join('');
+  printArea.innerHTML = certHTML;
+
+  closeModal();
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(() => {
+      printArea.innerHTML = '';
+    }, 1000);
+  }, 200);
+}
+
+function buildCert(v) {
+  const isInst = v.isInstrument;
+  const certClass = isInst ? 'cert-instrument' : 'cert-passenger';
+  const num = isInst ? (v.instrumentNum || '---') : (v.passengerNum || '---');
+  const dayLabel = DAY_LABELS[v.day] || v.day;
+  const titleLine2 = isInst ? '（バックステージ可）' : '';
+
+  return `
+  <div class="cert ${certClass}">
+    <div class="cert-top">
+      <div class="cert-title-area">
+        <div class="cert-title-main">ARTIST${isInst ? ' 機材車' : ''}</div>
+        ${titleLine2 ? `<div class="cert-title-sub">${titleLine2}</div>` : ''}
+      </div>
+      <div class="cert-num-area">
+        <div class="cert-num-value">${num}</div>
+        <div class="cert-logo">LuckyFes'26</div>
+      </div>
+    </div>
+    <div class="cert-middle">
+      <div class="cert-date-label">
+        <div class="cert-date-label-text">有効</div>
+        <div class="cert-date-label-text">期間</div>
+      </div>
+      <div class="cert-date-value">${dayLabel}</div>
+      <div class="cert-name-area">
+        <div class="cert-name-row">
+          <span class="cert-name-label">氏名</span>
+          <span class="cert-name-value">${escHtml(v.driver)}</span>
+        </div>
+        <div class="cert-name-row">
+          <span class="cert-name-label">TEL</span>
+          <span class="cert-name-value">${escHtml(v.tel)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="cert-bottom">
+      <div class="cert-caution-title">◉注意事項　－　必ずお読みください◉</div>
+      <div class="cert-caution-list">
+※海浜口駐車場入り口到着時よりこの駐車証は係員からよく見えるようダッシュボードにこちらの面を表にして掲示してください。<br>
+※海浜口駐車場で必要な表記を受け取り、指定ルートにて園内に進入してください。<br>
+※車両証には必ず氏名・携帯番号をご記入ください。記載がない車両は駐車をお断りします。<br>
+※場内ではクラクションを鳴らさないでください。<br>
+※運営本部に無断で指定の駐車場以外に駐車した場合はレッカーで移動する場合がございます。その際移動費は運転者にご負担いただきます。<br>
+※場内での盗難・事故等については主催及び運営本では一切の責任を負いません。
+      </div>
+    </div>
+  </div>`;
+}
+
+// ========== UTILS ==========
+function addLog(msg, type) {
+  const logArea = document.getElementById('logArea');
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const div = document.createElement('div');
+  div.className = `log-line ${type}`;
+  div.innerHTML = `<span class="log-time">${time}</span><span>${msg}</span>`;
+  logArea.appendChild(div);
+  logArea.scrollTop = logArea.scrollHeight;
+}
+
+function showToast(msg, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `toast show ${isError ? 'error' : ''}`;
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => { toast.className = 'toast'; }, 3000);
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Close modal on overlay click
+document.getElementById('exportModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
